@@ -1,0 +1,294 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}{{ 'Editar' if design else 'Crear' }} Diseño de Reporte{% endblock %}
+
+{% block content %}
+<form method="post" id="designerForm" enctype="multipart/form-data">
+    <input type="hidden" name="id" value="{{ design.id if design }}">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ 'Editar' if design else 'Crear' }} Diseño de Reporte</h2>
+        <div>
+            <a href="{{ url_for('admin.designs') }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Guardar Diseño</button>
+        </div>
+    </div>
+    <hr>
+
+    <div class="card">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" id="designerTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">1. General</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#structure" type="button" role="tab">2. Estructura</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#branding" type="button" role="tab">3. Membrete</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#filters" type="button" role="tab">4. Filtros</button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body">
+            <div class="tab-content" id="designerTabContent">
+
+                <div class="tab-pane fade show active" id="general" role="tabpanel">
+                    <h5 class="card-title">Configuración General y Fuente de Datos</h5>
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="name" class="form-label">Nombre del Reporte</label>
+                            <input type="text" class="form-control" name="name" id="name" value="{{ design.name or '' }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="output_format" class="form-label">Formato de Salida</label>
+                            <select class="form-select" name="output_format" id="output_format">
+                                <option value="pdf" {% if design and design.output_format == 'pdf' %}selected{% endif %}>PDF</option>
+                                <option value="xlsx" {% if design and design.output_format == 'xlsx' %}selected{% endif %}>Excel (XLSX)</option>
+                                <option value="html_email" {% if design and design.output_format == 'html_email' %}selected{% endif %}>HTML para Email</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="repository_id" class="form-label">Repositorio de Datos (Query)</label>
+                        <select class="form-select" name="repository_id" id="repository_id" required>
+                            <option value="" disabled {% if not design %}selected{% endif %}>-- Selecciona un repositorio --</option>
+                            {% for repo in repositories %}
+                                <option value="{{ repo.id }}" {% if design and design.repository_id == repo.id %}selected{% endif %}>{{ repo.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <hr class="my-4">
+                    <h5 class="card-title">Destinatarios y Horario de Envío</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email_to" class="form-label">Enviar a (separados por coma)</label>
+                            <input type="text" class="form-control" name="email_to" id="email_to" value="{{ design.email_to or '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="email_cc" class="form-label">CC (separados por coma)</label>
+                            <input type="text" class="form-control" name="email_cc" id="email_cc" value="{{ design.email_cc or '' }}">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Días de la semana</label>
+                            <div>
+                                {% set schedule_days = design.schedule_days | fromjson if design and design.schedule_days else [] %}
+                                {% set dias = {'0': 'Lunes', '1': 'Martes', '2': 'Miércoles', '3': 'Jueves', '4': 'Viernes', '5': 'Sábado', '6': 'Domingo'} %}
+                                {% for value, name in dias.items() %}
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="schedule_days" id="day-{{ value }}" value="{{ value }}" {% if value in schedule_days %}checked{% endif %}>
+                                    <label class="form-check-label" for="day-{{ value }}">{{ name }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="schedule_time" class="form-label">Hora de envío (24h)</label>
+                            <input type="time" class="form-control" name="schedule_time" id="schedule_time" value="{{ design.schedule_time or '' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="structure" role="tabpanel">
+                    <div id="structure-section" class="d-none">
+                        <div class="row">
+                            <div class="col-md-7">
+                                <h6>Campos del Reporte (Arrastra para reordenar)</h6>
+                                <ul id="fields-list" class="list-group"></ul>
+                            </div>
+                            <div class="col-md-5">
+                                <h6>Agrupar por Campo</h6>
+                                <select class="form-select mb-3" name="group_by_field" id="group_by_field"></select>
+                                <h6>Campos a Totalizar</h6>
+                                <div id="total_fields_container" class="border p-2" style="height: 150px; overflow-y: auto;"></div>
+                            </div>
+                        </div>
+                        <hr class="my-4">
+                        <h5 class="card-title">Gráfico (Opcional)</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="chart_type" class="form-label">Tipo de Gráfico</label>
+                                <select class="form-select" name="chart_type" id="chart_type">
+                                    <option value="">-- Sin Gráfico --</option>
+                                    <option value="bar" {% if design and design.config.get('chart', {}).get('type') == 'bar' %}selected{% endif %}>Barras</option>
+                                    <option value="pie" {% if design and design.config.get('chart', {}).get('type') == 'pie' %}selected{% endif %}>Torta</option>
+                                    <option value="line" {% if design and design.config.get('chart', {}).get('type') == 'line' %}selected{% endif %}>Línea</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="chart_x_axis" class="form-label">Eje X (Categorías)</label>
+                                <select class="form-select" name="chart_x_axis" id="chart_x_axis"></select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="chart_y_axis" class="form-label">Eje Y (Valores)</label>
+                                <select class="form-select" name="chart_y_axis" id="chart_y_axis"></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="structure-placeholder"><p class="text-muted">Selecciona una fuente de datos en la pestaña "General" para configurar la estructura.</p></div>
+                </div>
+
+                <div class="tab-pane fade" id="branding" role="tabpanel">
+                    <h5 class="card-title">Membrete y Logo de la Empresa</h5>
+                    <div class="mb-3">
+                        <label for="company_logo" class="form-label">Logo de la Empresa (Opcional)</label>
+                        <input class="form-control" type="file" id="company_logo" name="company_logo" accept="image/png, image/jpeg">
+                        {% if design and design.config.get('branding', {}).get('logo_filename') %}
+                            <small class="form-text text-muted mt-2">Logo actual: {{ design.config.branding.logo_filename }} (Sube un nuevo archivo para reemplazarlo)</small>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="header_text" class="form-label">Texto del Encabezado (Opcional)</label>
+                        <textarea class="form-control" name="header_text" id="header_text" rows="4" placeholder="Ej: Nombre de la Empresa&#10;Dirección&#10;Teléfono y Correo">{{ design.config.get('branding', {}).get('header_text', '') if design else '' }}</textarea>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="filters" role="tabpanel">
+                    <h5 class="card-title">Filtros de Ejecución</h5>
+                    <p class="text-muted">Define los parámetros que se solicitarán al usuario. El orden debe coincidir con los '?' en tu consulta SQL.</p>
+                    <div id="filters-container">
+                        {% if design and design.config.get('filters') %}
+                            {% for filter in design.config.filters %}
+                            <div class="row filter-row mb-2 align-items-center">
+                                <div class="col-md-4"><input type="text" name="filter_label" class="form-control" placeholder="Etiqueta para el usuario" value="{{ filter.label }}"></div>
+                                <div class="col-md-3"><input type="text" name="filter_name" class="form-control" placeholder="Nombre del parámetro" value="{{ filter.name }}"></div>
+                                <div class="col-md-3">
+                                    <select name="filter_type" class="form-select">
+                                        <option value="text" {% if filter.type == 'text' %}selected{% endif %}>Texto</option>
+                                        <option value="date" {% if filter.type == 'date' %}selected{% endif %}>Fecha</option>
+                                        <option value="number" {% if filter.type == 'number' %}selected{% endif %}>Número</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2"><button type="button" class="btn btn-danger btn-sm" onclick="removeFilter(this)">Eliminar</button></div>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-success btn-sm mt-2" onclick="addFilter()">Añadir Filtro</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const isEditing = {{ 'true' if design else 'false' }};
+        const repoSelect = document.getElementById('repository_id');
+        const structureSection = document.getElementById('structure-section');
+        const structurePlaceholder = document.getElementById('structure-placeholder');
+        const designerForm = document.getElementById('designerForm');
+
+        repoSelect.addEventListener('change', function() {
+            if (this.value) fetchColumns(this.value);
+        });
+
+        designerForm.addEventListener('submit', function() {
+            const fieldsList = document.getElementById('fields-list');
+            if (fieldsList) {
+                designerForm.querySelectorAll('input[name="field_order"]').forEach(el => el.remove());
+                fieldsList.querySelectorAll('li').forEach((item) => {
+                    const fieldName = item.dataset.field;
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = `field_order`;
+                    hiddenInput.value = fieldName;
+                    designerForm.appendChild(hiddenInput);
+                });
+            }
+        });
+
+        if (repoSelect.value) {
+            fetchColumns(repoSelect.value);
+        }
+
+        async function fetchColumns(repoId) {
+            const url = `{{ url_for('admin.get_repo_columns', repository_id=0) }}`.replace('0', repoId);
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Error al cargar columnas');
+                const result = await response.json();
+                if (result.success) {
+                    populateFieldSelectors(result.columns);
+                    structureSection.classList.remove('d-none');
+                    structurePlaceholder.classList.add('d-none');
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                alert('No se pudieron cargar las columnas del repositorio.');
+            }
+        }
+
+        function populateFieldSelectors(columns) {
+            const fieldsList = document.getElementById('fields-list');
+            const groupBySelect = document.getElementById('group_by_field');
+            const totalFieldsContainer = document.getElementById('total_fields_container');
+            const chartXSelect = document.getElementById('chart_x_axis');
+            const chartYSelect = document.getElementById('chart_y_axis');
+
+            [fieldsList, groupBySelect, totalFieldsContainer, chartXSelect, chartYSelect].forEach(el => el.innerHTML = '');
+            groupBySelect.innerHTML = '<option value="">-- Sin Agrupación --</option>';
+            chartXSelect.innerHTML = '<option value="">-- Selecciona --</option>';
+            chartYSelect.innerHTML = '<option value="">-- Selecciona --</option>';
+            
+            const designConfig = {{ design.config | tojson | safe if design else {} }};
+            const savedFields = designConfig.fields || {};
+            const savedTotals = designConfig.total_fields || [];
+            const fieldOrder = savedFields.order && savedFields.order.length > 0 ? savedFields.order : columns;
+
+            fieldOrder.forEach(col => {
+                if (!columns.includes(col)) return;
+                const fieldData = savedFields.details ? (savedFields.details[col] || {}) : {};
+                const isVisible = fieldData.visible !== false;
+                const label = fieldData.label || col;
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.dataset.field = col;
+                li.innerHTML = `<div class="d-flex align-items-center"><i class="bi bi-grip-vertical me-2" style="cursor: move;"></i><input class="form-check-input me-3" type="checkbox" name="field_visible_${col}" ${isVisible ? 'checked' : ''}><strong class="me-3">${col}</strong></div><input type="text" class="form-control form-control-sm w-50" name="field_label_${col}" value="${label}" placeholder="Etiqueta personalizada">`;
+                fieldsList.appendChild(li);
+            });
+
+            columns.forEach(col => {
+                const optionHtml = `<option value="${col}">${col}</option>`;
+                groupBySelect.innerHTML += optionHtml;
+                chartXSelect.innerHTML += optionHtml;
+                chartYSelect.innerHTML += optionHtml;
+                const isTotalChecked = savedTotals.includes(col);
+                totalFieldsContainer.innerHTML += `<div class="form-check"><input class="form-check-input" type="checkbox" name="total_fields" value="${col}" id="total_${col}" ${isTotalChecked ? 'checked' : ''}><label class="form-check-label" for="total_${col}">${col}</label></div>`;
+            });
+
+            if (isEditing) {
+                groupBySelect.value = designConfig.group_by_field || '';
+                const chartConfig = designConfig.chart || {};
+                chartXSelect.value = chartConfig.x_axis || '';
+                chartYSelect.value = chartConfig.y_axis || '';
+            }
+
+            new Sortable(fieldsList, { animation: 150, handle: '.bi-grip-vertical' });
+        }
+    });
+
+    function addFilter() {
+        const container = document.getElementById('filters-container');
+        const newFilterRow = document.createElement('div');
+        newFilterRow.className = 'row filter-row mb-2 align-items-center';
+        newFilterRow.innerHTML = `<div class="col-md-4"><input type="text" name="filter_label" class="form-control" placeholder="Etiqueta para el usuario" required></div><div class="col-md-3"><input type="text" name="filter_name" class="form-control" placeholder="Nombre del parámetro" required></div><div class="col-md-3"><select name="filter_type" class="form-select"><option value="text">Texto</option><option value="date">Fecha</option><option value="number">Número</option></select></div><div class="col-md-2"><button type="button" class="btn btn-danger btn-sm" onclick="removeFilter(this)">Eliminar</button></div>`;
+        container.appendChild(newFilterRow);
+    }
+
+    function removeFilter(button) {
+        button.closest('.filter-row').remove();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "admin/layout.html" %}
+{% block title %}Historial de Envíos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Historial de Envíos de Correo</h2>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Fecha y Hora</th>
+                        <th style="width: 20%;">Reporte</th>
+                        <th style="width: 30%;">Destinatarios</th>
+                        <th style="width: 10%;">Estado</th>
+                        <th style="width: 25%;">Mensaje de Error</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.timestamp }}</td>
+                        <td>{{ log.report_name }}</td>
+                        <td class="small">{{ log.recipients }}</td>
+                        <td>
+                            {% if log.status == 'Enviado' %}
+                                <span class="badge bg-success">Enviado</span>
+                            {% else %}
+                                <span class="badge bg-danger">Fallido</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-danger small">{{ log.error_message or '' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">No hay registros de envíos.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

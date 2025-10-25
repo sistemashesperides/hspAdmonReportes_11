@@ -1,0 +1,82 @@
+--Declara variables una sola vez
+DECLARE @Hoy DATE = GETDATE();
+DECLARE @FechaDesde VARCHAR(19) = CONVERT(CHAR(10), @Hoy, 126) + ' 00:00:00';
+DECLARE @FechaHasta VARCHAR(19) = CONVERT(CHAR(10), @Hoy, 126) + ' 23:59:59';
+DECLARE @IVA DECIMAL(28,4) = ISNULL(((SELECT MtoTax FROM SATAXES WHERE CodTaxs = 'IVA') / 100.0) + 1.0, 1.0); -- Maneja NULL por si no existe IVA
+
+-- 1. Obtener Descripción de la Empresa (para el asunto por defecto)
+SELECT TOP 1 RTRIM(Descrip) AS NombreEmpresa FROM SACONF;
+
+-- 2. Resumen de Documentos (Ventas Brutas y Notas de Entrega Brutas)
+SELECT 
+    TipoFac AS Documento, 
+    COUNT(TipoFac) AS Cantidad, 
+    SUM(MtoTotal - ISNULL(RetenIVA, 0)) AS MontoBruto -- Usar ISNULL para RetenIVA
+FROM SAFACT
+WHERE 
+    ISNULL(CodOper, '') <> 'IN' 
+    AND TipoFac IN ('A', 'B', 'C', 'D')
+    AND FechaE BETWEEN @FechaDesde AND @FechaHasta
+GROUP BY TipoFac
+ORDER BY TipoFac ASC;
+
+-- 3. Ventas Netas (Facturas - Devoluciones de Facturas)
+SELECT 
+    SUM(CASE WHEN TipoFac = 'A' THEN MtoTotal - ISNULL(RetenIVA, 0) ELSE 0 END) - 
+    SUM(CASE WHEN TipoFac = 'B' THEN MtoTotal - ISNULL(RetenIVA, 0) ELSE 0 END) AS VentasNetas
+FROM SAFACT
+WHERE 
+    ISNULL(CodOper, '') <> 'IN' 
+    AND TipoFac IN ('A', 'B')
+    AND FechaE BETWEEN @FechaDesde AND @FechaHasta;
+
+-- 4. Notas de Entrega Netas (Notas - Devoluciones de Notas)
+SELECT 
+    SUM(CASE WHEN TipoFac = 'C' THEN MtoTotal - ISNULL(RetenIVA, 0) ELSE 0 END) - 
+    SUM(CASE WHEN TipoFac = 'D' THEN MtoTotal - ISNULL(RetenIVA, 0) ELSE 0 END) AS NotasEntregaNetas
+FROM SAFACT
+WHERE 
+    ISNULL(CodOper, '') <> 'IN' 
+    AND TipoFac IN ('C', 'D')
+    AND FechaE BETWEEN @FechaDesde AND @FechaHasta;
+
+-- 5. Impuesto IGTF Neto (Solo sobre Facturas A y B)
+SELECT 
+    SUM(CASE WHEN SF.TipoFac = 'A' THEN SFO.ImpuestoD ELSE 0 END) -
+    SUM(CASE WHEN SF.TipoFac = 'B' THEN SFO.ImpuestoD ELSE 0 END) AS IGTF_Neto
+FROM SAFACT SF
+LEFT JOIN SAFACT_01 SFO ON SF.NumeroD = SFO.NumeroD AND SF.TipoFac = SFO.TipoFac -- LEFT JOIN por si no todas tienen IGTF
+WHERE 
+    ISNULL(SF.CodOper, '') <> 'IN'
+    AND SF.TipoFac IN ('A', 'B') 
+    AND SF.FechaE BETWEEN @FechaDesde AND @FechaHasta;
+
+-- 6. Descuentos Otorgados Netos (Sobre todos los tipos A, B, C, D)
+SELECT 
+    SUM(CASE WHEN SF.TipoFac IN ('A', 'C') THEN ISNULL(SFO.Descto1, 0) ELSE 0 END) -
+    SUM(CASE WHEN SF.TipoFac IN ('B', 'D') THEN ISNULL(SFO.Descto1, 0) ELSE 0 END) * @IVA AS DescuentosNetos -- Aplicar IVA solo al descuento
+FROM SAFACT SF
+LEFT JOIN SAFACT_01 SFO ON SF.NumeroD = SFO.NumeroD AND SF.TipoFac = SFO.TipoFac -- LEFT JOIN por si no todas tienen Descto1
+WHERE 
+    SF.FechaE BETWEEN @FechaDesde AND @FechaHasta
+    AND SF.TipoFac IN ('A', 'B', 'C', 'D'); -- Considerar todos los documentos para descuentos
+
+-- 7. Cuentas por Cobrar generadas hoy
+SELECT 
+    SUM(ISNULL(Saldo, 0) / CASE WHEN Factor = 0 THEN 1 ELSE Factor END) AS CuentasPorCobrarHoy -- Evitar división por cero
+FROM SAACXC
+WHERE 
+    FechaE BETWEEN @FechaDesde AND @FechaHasta;
+
+-- 8. Desglose de Instrumentos de Pago de hoy
+SELECT 
+    ISNULL(SI.tipofac, 'N/A') AS TipoDocumento, -- Incluir pagos sin documento asociado si aplica
+    SI.CodTarj,
+    ST.Descrip AS Instrumento,
+    SUM(SI.monto) AS MontoTotalPago
+FROM SAIPAVTA SI
+INNER JOIN SATARJ ST ON SI.CodTarj = ST.CodTarj
+WHERE 
+    SI.FechaE BETWEEN @FechaDesde AND @FechaHasta
+GROUP BY ISNULL(SI.tipofac, 'N/A'), SI.CodTarj, ST.Descrip
+ORDER BY TipoDocumento, MontoTotalPago DESC;

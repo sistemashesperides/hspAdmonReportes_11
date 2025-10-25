@@ -1,0 +1,116 @@
+{% extends "admin/layout.html" %}
+{% block title %}Diseños de Reportes{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Diseños de Reportes</h2>
+    <a href="{{ url_for('admin.designer') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Crear Nuevo Diseño
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Nombre del Diseño</th>
+                    <th>Formato</th>
+                    <th>Repositorio de Datos</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for design in designs %}
+                <tr>
+                    <td>{{ design.name }}</td>
+                    <td><span class="badge bg-info text-dark">{{ design.output_format.upper() }}</span></td>
+                    <td><span class="badge bg-secondary">{{ design.repository_name }}</span></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-success"
+                                data-design-id="{{ design.id }}"
+                                data-design-name="{{ design.name }}"
+                                data-filters='{{ design.config.get("filters", []) | tojson | safe }}'
+                                onclick="prepareExecutionModal(this)">
+                            Ejecutar
+                        </button>
+                        <a href="{{ url_for('admin.designer', design_id=design.id) }}" class="btn btn-sm btn-secondary">Editar</a>
+                        <form method="post" action="{{ url_for('admin.designs') }}" style="display: inline;">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="id" value="{{ design.id }}">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de eliminar este diseño?')">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center">No hay diseños de reportes creados.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="executionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="executionModalLabel">Parámetros del Reporte</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="executionForm" method="post">
+                <div class="modal-body" id="executionModalBody">
+                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Generar Reporte</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const executionModal = new bootstrap.Modal(document.getElementById('executionModal'));
+
+    // ===================== CORRECCIÓN CLAVE AQUÍ =====================
+    // 1. La función ahora recibe el elemento del botón (buttonElement)
+    function prepareExecutionModal(buttonElement) {
+        // 2. Leemos los datos de forma segura desde los atributos data-*
+        const designId = buttonElement.dataset.designId;
+        const designName = buttonElement.dataset.designName;
+        const filtersString = buttonElement.dataset.filters;
+        const filters = JSON.parse(filtersString);
+
+        // 3. El resto de la función es igual, pero usa las variables que acabamos de leer
+        const modalLabel = document.getElementById('executionModalLabel');
+        const modalBody = document.getElementById('executionModalBody');
+        const form = document.getElementById('executionForm');
+
+        modalLabel.innerText = `Parámetros para: ${designName}`;
+        modalBody.innerHTML = ''; // Limpiar el cuerpo del modal
+
+        if (filters && filters.length > 0) {
+            filters.forEach(filter => {
+                const inputType = filter.type === 'date' ? 'date' : (filter.type === 'number' ? 'number' : 'text');
+                const formGroup = document.createElement('div');
+                formGroup.className = 'mb-3';
+                formGroup.innerHTML = `
+                    <label for="filter_${filter.name}" class="form-label">${filter.label}</label>
+                    <input type="${inputType}" class="form-control" name="${filter.name}" id="filter_${filter.name}" required>
+                `;
+                modalBody.appendChild(formGroup);
+            });
+        } else {
+            modalBody.innerHTML = '<p>Este reporte no requiere parámetros. ¿Deseas generarlo ahora?</p>';
+        }
+
+        form.action = `{{ url_for('admin.execute_report', design_id=0) }}`.replace('0', designId);
+        executionModal.show();
+    }
+    // ===================================================================
+</script>
+{% endblock %}

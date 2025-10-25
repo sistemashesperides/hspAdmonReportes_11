@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <style>
+        body { font-family: sans-serif; font-size: 10px; } /* Tamaño de fuente más pequeño */
+        .header { text-align: center; margin-bottom: 15px; }
+        .logo { max-height: 60px; margin-bottom: 5px; }
+        .header h2 { margin: 5px 0; font-size: 16px;}
+        pre { font-family: sans-serif; font-size: 9px; color: #555; margin: 0; white-space: pre-wrap; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        th, td { border: 1px solid #ccc; padding: 5px; text-align: left; }
+        th { background-color: #f2f2f2; font-weight: bold; }
+        .group-header { background-color: #e0e0e0; font-weight: bold; }
+        .subtotal-row td, .grand-total-row td { background-color: #f0f0f0; font-weight: bold; border-top: 2px solid #aaa; }
+        .text-right { text-align: right; }
+        .chart-container { text-align: center; margin-top: 20px; }
+        .chart-image { max-width: 90%; height: auto; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        {% if logo_path %}<img src="{{ logo_path }}" class="logo">{% endif %}
+        {% if branding.header_text %}<pre>{{ branding.header_text }}</pre>{% endif %}
+        <h2>{{ title }}</h2>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                {% for col in columns %}<th>{{ col }}</th>{% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% if grouped_data %}
+                {% for group_name, group_info in grouped_data.items() %}
+                    <tr class="group-header">
+                        <td colspan="{{ columns | length }}">{{ group_by_field }}: {{ group_name }}</td>
+                    </tr>
+                    {% for row in group_info.rows %}
+                    <tr>
+                        {% for col in columns %}
+                            <td class="{{ 'text-right' if col in total_fields else '' }}">{{ row[col] }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    {% if group_info.subtotals %}
+                    <tr class="subtotal-row">
+                        {% for col in columns %}
+                            {% if col == group_by_field %}
+                                <td class="text-right">Subtotal:</td>
+                            {% elif col in total_fields %}
+                                <td class="text-right">{{ group_info.subtotals[col] }}</td>
+                            {% else %}
+                                <td></td> {# Celda vacía para columnas no totalizadas #}
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                    {% endif %}
+                {% endfor %}
+            {% else %} {# Si no hay grupos, mostrar datos planos #}
+                {% for row in data_rows %}
+                <tr>
+                    {% for col in columns %}
+                        <td class="{{ 'text-right' if col in total_fields else '' }}">{{ row[col] }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            {% endif %}
+
+            {% if grand_totals %}
+            <tr class="grand-total-row">
+                 {% for col in columns %}
+                    {% if loop.first %} {# Poner etiqueta en la primera columna #}
+                         <td class="text-right">TOTAL GENERAL:</td>
+                    {% elif col in total_fields %}
+                        <td class="text-right">{{ grand_totals[col] }}</td>
+                    {% else %}
+                        <td></td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    {% if chart_image %}
+    <div class="chart-container">
+        <img src="{{ chart_image }}" class="chart-image" alt="Gráfico del Reporte">
+    </div>
+    {% endif %}
+
+</body>
+</html>

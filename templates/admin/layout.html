@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Panel de Administración{% endblock %} - Admin Reportes</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('admin.report_list') }}">Admin Reportes</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if request.endpoint in ['admin.settings', 'admin.connections', 'admin.repositories', 'admin.designs', 'admin.designer', 'daily_summary.config_page'] %}active{% endif %}" href="#" id="configDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Configuración
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="configDropdown">
+                            <li><a class="dropdown-item {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">Generales (SMTP)</a></li>
+                            <li><a class="dropdown-item {% if request.endpoint == 'admin.connections' %}active{% endif %}" href="{{ url_for('admin.connections') }}">Conexiones</a></li>
+                            <li><a class="dropdown-item {% if request.endpoint == 'admin.repositories' %}active{% endif %}" href="{{ url_for('admin.repositories') }}">Repositorios</a></li>
+                            <li><a class="dropdown-item {% if 'designs' in request.endpoint or 'designer' in request.endpoint %}active{% endif %}" href="{{ url_for('admin.designs') }}">Diseños</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item {% if request.endpoint == 'daily_summary.config_page' %}active{% endif %}" href="{{ url_for('daily_summary.config_page') }}">Resumen Diario</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if request.endpoint == 'admin.report_list' %}active{% endif %}" href="#" id="emissionDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Emisión
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="emissionDropdown">
+                            <li><a class="dropdown-item {% if request.endpoint == 'admin.report_list' %}active{% endif %}" href="{{ url_for('admin.report_list') }}">Reportes</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if request.endpoint == 'admin.email_log' %}active{% endif %}" href="#" id="variousDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Varios
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="variousDropdown">
+                            <li><a class="dropdown-item {% if request.endpoint == 'admin.email_log' %}active{% endif %}" href="{{ url_for('admin.email_log') }}">Historial</a></li>
+                        </ul>
+                    </li>
+
+                </ul>
+                <a href="{{ url_for('admin.logout') }}" class="btn btn-outline-light">Cerrar Sesión</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="container mt-5 py-3 border-top">
+        <p class="text-end text-muted small">
+            Desarrollado por <strong>SuperSystem Code</strong> | Versión 1.000
+        </p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

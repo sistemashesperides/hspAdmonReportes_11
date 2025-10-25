@@ -1,0 +1,187 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Repositorios de Datos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Repositorios de Datos (Queries)</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#repositoryModal" onclick="prepareNewRepository()">
+        <i class="bi bi-plus-circle"></i> Añadir Nuevo Repositorio
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Conexión</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for repo in repositories %}
+                <tr>
+                    <td>{{ repo.name }}</td>
+                    <td>{{ repo.description or 'N/A' }}</td>
+                    <td><span class="badge bg-secondary">{{ repo.connection_name }}</span></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-secondary" 
+                                data-repo='{{ repo | tojson | safe }}' 
+                                onclick="prepareEditRepository(this)">
+                            Editar
+                        </button>
+                        <form method="post" action="{{ url_for('admin.repositories') }}" style="display: inline;">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="id" value="{{ repo.id }}">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro?')">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center">No hay repositorios de datos creados.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="repositoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="repositoryModalLabel">Añadir Repositorio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="repositoryForm" method="post" action="{{ url_for('admin.repositories') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="action" id="formAction" value="save">
+                    <input type="hidden" name="id" id="formId">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nombre del Repositorio</label>
+                        <input type="text" class="form-control" name="name" id="formName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descripción</label>
+                        <input type="text" class="form-control" name="description" id="formDescription">
+                    </div>
+                    <div class="mb-3">
+                        <label for="connection_id" class="form-label">Conexión de Base de Datos</label>
+                        <select class="form-select" name="connection_id" id="formConnectionId" required>
+                            <option value="" disabled selected>-- Selecciona una conexión --</option>
+                            {% for conn in connections %}
+                                <option value="{{ conn.id }}">{{ conn.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sql_query" class="form-label">Consulta SQL</label>
+                        <textarea class="form-control" name="sql_query" id="formSqlQuery" rows="8" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-info" onclick="testCurrentQuery()">Probar Consulta</button>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="testResultModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Resultado de la Prueba</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="testResultAlert"></div>
+                <div id="testResultTable" class="table-responsive"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const repositoryModalEl = document.getElementById('repositoryModal');
+    const repositoryModal = new bootstrap.Modal(repositoryModalEl);
+    const testResultModal = new bootstrap.Modal(document.getElementById('testResultModal'));
+
+    function prepareNewRepository() {
+        document.getElementById('repositoryModalLabel').innerText = 'Añadir Repositorio';
+        document.getElementById('repositoryForm').reset();
+        document.getElementById('formAction').value = 'save';
+        document.getElementById('formId').value = '';
+    }
+
+    // ===================== CORRECCIÓN CLAVE AQUÍ =====================
+    // 1. La función ahora recibe el elemento del botón (element)
+    function prepareEditRepository(buttonElement) {
+        // 2. Leemos el string JSON desde el atributo 'data-repo'
+        const repoString = buttonElement.getAttribute('data-repo');
+        // 3. Convertimos el string JSON en un objeto JavaScript
+        const repo = JSON.parse(repoString);
+
+        // 4. El resto de la función es igual que antes
+        document.getElementById('repositoryModalLabel').innerText = 'Editar Repositorio';
+        document.getElementById('repositoryForm').reset();
+        document.getElementById('formAction').value = 'save';
+        document.getElementById('formId').value = repo.id;
+        document.getElementById('formName').value = repo.name;
+        document.getElementById('formDescription').value = repo.description;
+        document.getElementById('formConnectionId').value = repo.connection_id;
+        document.getElementById('formSqlQuery').value = repo.sql_query;
+        repositoryModal.show();
+    }
+    // ===================================================================
+
+    async function testCurrentQuery() {
+        const connectionId = document.getElementById('formConnectionId').value;
+        const sqlQuery = document.getElementById('formSqlQuery').value;
+
+        if (!connectionId || !sqlQuery) {
+            alert('Por favor, selecciona una conexión y escribe una consulta SQL.');
+            return;
+        }
+
+        const response = await fetch("{{ url_for('admin.test_repository') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ connection_id: connectionId, sql_query: sqlQuery })
+        });
+        const result = await response.json();
+        
+        const alertDiv = document.getElementById('testResultAlert');
+        const tableDiv = document.getElementById('testResultTable');
+        
+        alertDiv.className = `alert ${result.success ? 'alert-success' : 'alert-danger'}`;
+        alertDiv.innerText = result.message;
+
+        tableDiv.innerHTML = '';
+        if (result.success && result.data && result.data[1].length > 0) {
+            const columns = result.data[0];
+            const rows = result.data[1];
+            let table = '<table class="table table-sm table-bordered"><thead><tr>';
+            columns.forEach(col => table += `<th>${col}</th>`);
+            table += '</tr></thead><tbody>';
+            rows.forEach(row => {
+                table += '<tr>';
+                columns.forEach(col => table += `<td>${row[col] || ''}</td>`);
+                table += '</tr>';
+            });
+            table += '</tbody></table>';
+            tableDiv.innerHTML = table;
+        }
+        testResultModal.show();
+    }
+</script>
+{% endblock %}

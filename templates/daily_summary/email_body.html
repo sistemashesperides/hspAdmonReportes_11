@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen Diario de Ventas</title>
+    <!--[if mso]> <style>table, td, th {border-collapse: collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;} </style><![endif]-->
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 700px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <!-- Encabezado con Logo y Título -->
+        <tr>
+            <td style="padding: 30px 20px 20px 20px; text-align: center; border-bottom: 1px solid #e0e0e0;">
+                {# --- Acceso Seguro a Branding (aunque no esperamos que exista aquí) --- #}
+                {% set branding_info = data.get('branding', {}) %}
+                {% set logo_url = data.get('logo_path') %} {# logo_path puede ser file://, necesita ajuste si se quiere embeber logo #}
+
+                {% if logo_url %}
+                    <img src="{{ logo_url }}" alt="Logo Empresa" style="max-height: 70px; margin-bottom: 15px;">
+                {% endif %}
+                {% if branding_info.header_text %}
+                    <p style="font-size: 11px; color: #666; margin: 0 0 10px 0; line-height: 1.4;">{{ branding_info.header_text | replace('\n', '<br>') | safe }}</p>
+                {% endif %}
+                 {# --- Fin Acceso Seguro --- #}
+
+                <h1 style="color: #333; margin: 0; font-size: 22px; font-weight: 600;">Resumen Diario: {{ data.get('nombre_empresa', 'Empresa Desconocida') }}</h1>
+                <p style="color: #555; margin: 5px 0 0 0; font-size: 14px;">{{ today_date }}</p>
+            </td>
+        </tr>
+
+        <!-- Sección: Resumen General -->
+        <tr>
+            <td style="padding: 25px 20px;">
+                <h2 style="color: #007bff; margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #007bff; padding-bottom: 5px;">📊 Resumen General</h2>
+                <table border="0" cellpadding="8" cellspacing="0" width="100%" style="border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa;">
+                            <th style="border: 1px solid #dee2e6; padding: 10px; text-align: left;">Documento</th>
+                            <th style="border: 1px solid #dee2e6; padding: 10px; text-align: right;">Cantidad</th>
+                            <th style="border: 1px solid #dee2e6; padding: 10px; text-align: right;">Monto Bruto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in data.get('resumen_documentos', []) %} {# Usar .get() por seguridad #}
+                        <tr>
+                            <td style="border: 1px solid #dee2e6; padding: 10px;">{{ doc.Documento }}</td>
+                            <td style="border: 1px solid #dee2e6; padding: 10px; text-align: right;">{{ doc.Cantidad }}</td>
+                            <td style="border: 1px solid #dee2e6; padding: 10px; text-align: right;">{{ "%.2f"|format(doc.MontoBruto or 0) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3" style="border: 1px solid #dee2e6; padding: 10px; text-align: center; color: #6c757d;">Sin documentos procesados hoy.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Sección: Totales Netos -->
+        <tr>
+            <td style="padding: 25px 20px; background-color: #f8f9fa;">
+                <h2 style="color: #28a745; margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #28a745; padding-bottom: 5px;">💰 Totales Netos del Día</h2>
+                <table border="0" cellpadding="5" cellspacing="0" width="100%" style="font-size: 14px;">
+                    <tr><td style="padding: 5px 0;"><strong>Ventas Netas (A - B):</strong></td><td style="text-align: right;">{{ "%.2f"|format(data.get('ventas_netas', 0.0)) }}</td></tr>
+                    <tr><td style="padding: 5px 0;"><strong>Notas Entrega Netas (C - D):</strong></td><td style="text-align: right;">{{ "%.2f"|format(data.get('notas_entrega_netas', 0.0)) }}</td></tr>
+                    <tr><td style="padding: 5px 0;"><strong>IGTF Neto (Facturas):</strong></td><td style="text-align: right;">{{ "%.2f"|format(data.get('igtf_neto', 0.0)) }}</td></tr> {# Añadido IGTF aquí si existe en 'data' #}
+                    <tr><td style="padding: 5px 0;"><strong>Descuentos Netos Otorgados:</strong></td><td style="text-align: right;">{{ "%.2f"|format(data.get('descuentos_netos', 0.0)) }}</td></tr>
+                    <tr><td style="padding: 5px 0;"><strong>Cuentas por Cobrar Generadas:</strong></td><td style="text-align: right;">{{ "%.2f"|format(data.get('cxc_hoy', 0.0)) }}</td></tr>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Sección: Desglose Pagos -->
+        <tr>
+            <td style="padding: 25px 20px;">
+                <h2 style="color: #ffc107; margin-top: 0; margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #ffc107; padding-bottom: 5px;">💳 Desglose de Pagos</h2>
+                <table border="0" cellpadding="8" cellspacing="0" width="100%" style="border-collapse: collapse; font-size: 13px;">
+                     <thead>
+                        <tr style="background-color: #f8f9fa;">
+                            <th style="border: 1px solid #dee2e6; padding: 10px; text-align: left;">Tipo Doc.</th>
+                            <th style="border: 1px solid #dee2e6; padding: 10px; text-align: left;">Instrumento</th>
+                            <th style="border: 1px solid #dee2e6; padding: 10px; text-align: right;">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pago in data.get('desglose_pagos', []) %}
+                        <tr>
+                            <td style="border: 1px solid #dee2e6; padding: 10px;">{{ pago.TipoDocumento }}</td>
+                            <td style="border: 1px solid #dee2e6; padding: 10px;">{{ pago.Instrumento }} ({{ pago.CodTarj }})</td>
+                            <td style="border: 1px solid #dee2e6; padding: 10px; text-align: right;">{{ "%.2f"|format(pago.MontoTotalPago or 0) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3" style="border: 1px solid #dee2e6; padding: 10px; text-align: center; color: #6c757d;">Sin pagos registrados hoy.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+
+        <!-- Sección: Top Productos (lado a lado) -->
+        <tr>
+            <td style="padding: 25px 10px;">
+                 <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td width="48%" style="padding: 0 10px;" valign="top">
+                            <h2 style="color: #17a2b8; margin-top: 0; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #17a2b8; padding-bottom: 5px;">⭐ Top 10 Cantidad Neta</h2>
+                            <table border="0" cellpadding="6" cellspacing="0" width="100%" style="border-collapse: collapse; font-size: 11px;">
+                                <thead><tr style="background-color: #f8f9fa;"><th style="border: 1px solid #dee2e6; text-align: left;">Producto</th><th style="border: 1px solid #dee2e6; text-align: right;">Cant.</th></tr></thead>
+                                <tbody>
+                                    {% for prod in data.get('top_productos_cantidad', []) %}
+                                    <tr>
+                                        <td style="border: 1px solid #dee2e6;">{{ prod.Producto }} ({{ prod.CodItem }})</td>
+                                        <td style="border: 1px solid #dee2e6; text-align: right;">{{ prod.CantidadNeta | int }}</td>
+                                     </tr>
+                                    {% else %}<tr><td colspan="2" style="border: 1px solid #dee2e6; text-align: center; color: #6c757d;">N/A</td></tr>{% endfor %}
+                                </tbody>
+                            </table>
+                        </td>
+                        <td width="4%"></td> <!-- Espacio -->
+                        <td width="48%" style="padding: 0 10px;" valign="top">
+                            <h2 style="color: #6f42c1; margin-top: 0; margin-bottom: 15px; font-size: 16px; border-bottom: 2px solid #6f42c1; padding-bottom: 5px;">💲 Top 10 Monto Neto</h2>
+                             <table border="0" cellpadding="6" cellspacing="0" width="100%" style="border-collapse: collapse; font-size: 11px;">
+                                <thead><tr style="background-color: #f8f9fa;"><th style="border: 1px solid #dee2e6; text-align: left;">Producto</th><th style="border: 1px solid #dee2e6; text-align: right;">Monto</th></tr></thead>
+                                <tbody>
+                                    {% for prod in data.get('top_productos_monto', []) %}
+                                    <tr>
+                                        <td style="border: 1px solid #dee2e6;">{{ prod.Producto }} ({{ prod.CodItem }})</td>
+                                        <td style="border: 1px solid #dee2e6; text-align: right;">{{ "%.2f"|format(prod.MontoNeto or 0) }}</td>
+                                    </tr>
+                                    {% else %}<tr><td colspan="2" style="border: 1px solid #dee2e6; text-align: center; color: #6c757d;">N/A</td></tr>{% endfor %}
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                 </table>
+            </td>
+        </tr>
+
+        <!-- Sección: Gráficos (CON CID) -->
+        <tr>
+            <td style="padding: 20px;">
+                {# --- Usar cid: en lugar de data URI --- #}
+                {% if data.get('chart_30_days_bytes') %} {# Comprobar si existen los bytes #}
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <h2 style="color: #fd7e14; margin-top: 0; margin-bottom: 10px; font-size: 18px;">📈 Tendencia - Últimos 30 Días</h2>
+                        <img src="cid:{{ cid_chart_30 }}" style="max-width: 95%; height: auto; border: 1px solid #ddd;" alt="Gráfico 30 días">
+                    </div>
+                {% endif %}
+                {% if data.get('chart_12_months_bytes') %} {# Comprobar si existen los bytes #}
+                    <div style="text-align: center; margin-bottom: 10px;">
+                         <h2 style="color: #6610f2; margin-top: 0; margin-bottom: 10px; font-size: 18px;">🗓️ Tendencia - Últimos 12 Meses</h2>
+                        <img src="cid:{{ cid_chart_12 }}" style="max-width: 95%; height: auto; border: 1px solid #ddd;" alt="Gráfico 12 meses">
+                    </div>
+                {% endif %}
+                {# --- Fin Corrección --- #}
+            </td>
+        </tr>
+
+        <!-- Pie de página -->
+        <tr>
+            <td style="padding: 20px; text-align: center; font-size: 11px; color: #888; border-top: 1px solid #e0e0e0;">
+                Correo generado automáticamente por Admin Reportes.
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+

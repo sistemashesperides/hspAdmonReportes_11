@@ -1,0 +1,46 @@
+ACUERDO DE LICENCIA DE USUARIO FINAL (EULA) PARA "Admin Reportes"
+
+FECHA DE ÚLTIMA ACTUALIZACIÓN: 23 de octubre de 2025
+
+POR FAVOR, LEA ATENTAMENTE ESTE ACUERDO DE LICENCIA ANTES DE INSTALAR O UTILIZAR EL SOFTWARE.
+
+Este Acuerdo de Licencia de Usuario Final ("EULA") es un acuerdo legal entre usted (ya sea un individuo o una única entidad, en adelante "Usted" o "Licenciatario") y Super System Code (en adelante "Licenciante") para el software "Admin Reportes", que incluye el software informático y puede incluir medios asociados, materiales impresos y documentación "en línea" o electrónica (en adelante "Software").
+
+Al instalar, copiar o utilizar de cualquier otra forma el Software, Usted acepta quedar vinculado por los términos de este EULA. Si no está de acuerdo con los términos de este EULA, no instale ni utilice el Software.
+
+CONCESIÓN DE LICENCIA.
+El Licenciante le concede una licencia no exclusiva, intransferible y revocable para instalar y utilizar el Software en el número específico de estaciones de trabajo (ordenadores) para las que ha adquirido una licencia válida, de acuerdo con la documentación de licencia proporcionada por el Licenciante o su distribuidor autorizado. Esta licencia está vinculada al identificador único de la(s) máquina(s) especificada(s) durante el proceso de activación o adquisición de la licencia.
+
+LÍMITE DE CONEXIONES DE BASE DE DATOS.
+El uso del Software está limitado al número máximo de conexiones a bases de datos distintas especificado en su licencia adquirida. Usted no podrá configurar ni utilizar más conexiones de las permitidas por su licencia.
+
+RESTRICCIONES.
+Usted no puede, y no permitirá que otros:
+a)  Realicen ingeniería inversa, descompilen, desensamblen o intenten descubrir el código fuente del Software.
+b)  Modifiquen, adapten, traduzcan o creen trabajos derivados basados en el Software.
+c)  Alquilen, arrienden, presten, revendan, sublicencien, distribuyan o transfieran de cualquier otra forma el Software a terceros sin el consentimiento previo por escrito del Licenciante.
+d)  Eliminen o alteren cualquier aviso de copyright, marca registrada u otros avisos de propiedad contenidos en el Software.
+e)  Utilicen el Software de forma que viole cualquier ley o regulación aplicable.
+
+PROPIEDAD INTELECTUAL.
+El Software está protegido por leyes de derechos de autor y tratados internacionales de propiedad intelectual. El Licenciante retiene todos los derechos, títulos e intereses sobre el Software, incluyendo todos los derechos de propiedad intelectual asociados. Este EULA no le concede ningún derecho de propiedad sobre el Software, sino únicamente un derecho limitado de uso de acuerdo con sus términos.
+
+SIN GARANTÍAS.
+EL SOFTWARE SE PROPORCIONA "TAL CUAL", SIN GARANTÍA DE NINGÚN TIPO. EL LICENCIANTE RENUNCIA A TODAS LAS GARANTÍAS, YA SEAN EXPRESAS, IMPLÍCITAS O ESTATUTARIAS, INCLUIDAS, ENTRE OTRAS, LAS GARANTÍAS IMPLÍCITAS DE COMERCIABILIDAD, IDONEIDAD PARA UN PROPÓSITO PARTICULAR Y NO INFRACCIÓN DE DERECHOS DE TERCEROS. EL LICENCIANTE NO GARANTIZA QUE EL SOFTWARE FUNCIONE SIN INTERRUPCIONES O SIN ERRORES.
+
+LIMITACIÓN DE RESPONSABILIDAD.
+EN NINGÚN CASO EL LICENCIANTE SERÁ RESPONSABLE POR NINGÚN DAÑO ESPECIAL, INCIDENTAL, INDIRECTO O CONSECUENTE (INCLUIDOS, ENTRE OTROS, DAÑOS POR PÉRDIDA DE BENEFICIOS, INTERRUPCIÓN DEL NEGOCIO, PÉRDIDA DE INFORMACIÓN COMERCIAL U OTRA PÉRDIDA PECUNIARIA) QUE SURJA DEL USO O LA IMPOSIBILIDAD DE USAR EL SOFTWARE, INCLUSO SI EL LICENCIANTE HA SIDO ADVERTIDO DE LA POSIBILIDAD DE TALES DAÑOS. LA RESPONSABILIDAD TOTAL DEL LICENCIANTE BAJO CUALQUIER DISPOSICIÓN DE ESTE EULA SE LIMITARÁ AL IMPORTE EFECTIVAMENTE PAGADO POR USTED POR EL SOFTWARE.
+
+TERMINACIÓN.
+Sin perjuicio de otros derechos, el Licenciante puede rescindir este EULA si Usted incumple sus términos y condiciones. En tal caso, Usted deberá destruir todas las copias del Software y todos sus componentes.
+
+LEY APLICABLE.
+Este EULA se regirá e interpretará de acuerdo con las leyes de [Especificar Jurisdicción, ej: España]. Cualquier disputa que surja de este EULA se someterá a la jurisdicción exclusiva de los tribunales de [Especificar Ciudad/Región, ej: Madrid, España].
+
+ACUERDO COMPLETO.
+Este EULA constituye el acuerdo completo entre Usted y el Licenciante con respecto al Software y reemplaza todas las comunicaciones, propuestas y representaciones anteriores o contemporáneas, orales o escritas, con respecto al Software.
+
+CONTACTO.
+Si tiene alguna pregunta sobre este EULA, póngase en contacto con Super System Code en [Su Dirección de Correo Electrónico o Página Web].
+
+AL INSTALAR EL SOFTWARE, USTED RECONOCE QUE HA LEÍDO ESTE ACUERDO, LO COMPRENDE Y ACEPTA ESTAR OBLIGADO POR SUS TÉRMINOS Y CONDICIONES.

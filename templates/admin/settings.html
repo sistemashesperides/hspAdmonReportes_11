@@ -1,0 +1,63 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Configuración General{% endblock %}
+
+{% block content %}
+<h2>Configuración General</h2>
+<hr>
+
+<form method="post">
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Configuración del Servidor de Correo (SMTP)</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8 mb-3">
+                    <label for="smtp_server" class="form-label">Servidor SMTP</label>
+                    <input type="text" class="form-control" id="smtp_server" name="smtp_server" value="{{ settings.smtp_server or '' }}" placeholder="Ej: smtp.office365.com">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="smtp_port" class="form-label">Puerto</label>
+                    <input type="number" class="form-control" id="smtp_port" name="smtp_port" value="{{ settings.smtp_port or '587' }}">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="smtp_user" class="form-label">Usuario (Email de envío)</label>
+                    <input type="email" class="form-control" id="smtp_user" name="smtp_user" value="{{ settings.smtp_user or '' }}" placeholder="tu-correo@ejemplo.com">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="smtp_password" class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" id="smtp_password" name="smtp_password" value="{{ settings.smtp_password or '' }}">
+                </div>
+            </div>
+        </div>
+        <div class="card-footer text-end">
+            <button type="submit" name="update_smtp_settings" class="btn btn-primary">Guardar Configuración SMTP</button>
+        </div>
+    </div>
+</form>
+
+
+<form method="post">
+    <div class="card">
+        <div class="card-header">
+            <h4>Cambiar Contraseña de Administrador</h4>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="current_password" class="form-label">Contraseña Actual</label>
+                <input type="password" class="form-control" id="current_password" name="current_password" required>
+            </div>
+            <div class="mb-3">
+                <label for="new_password" class="form-label">Nueva Contraseña</label>
+                <input type="password" class="form-control" id="new_password" name="new_password" required>
+            </div>
+        </div>
+        <div class="card-footer text-end">
+            <button type="submit" name="update_password" class="btn btn-secondary">Cambiar Contraseña</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

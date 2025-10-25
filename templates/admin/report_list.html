@@ -1,0 +1,169 @@
+{% extends "admin/layout.html" %}
+{% block title %}Lista de Reportes{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Ejecutar Reportes</h2>
+    </div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Nombre del Reporte</th>
+                    <th>Formato</th>
+                    <th>Repositorio Asociado</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for design in designs %}
+                <tr>
+                    <td>{{ design.name }}</td>
+                    <td><span class="badge bg-info text-dark">{{ design.output_format.upper() }}</span></td>
+                    <td><span class="badge bg-secondary">{{ design.repository_name }}</span></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-success"
+                                data-design-id="{{ design.id }}"
+                                data-design-name="{{ design.name }}"
+                                data-filters='{{ design.config.get("filters", []) | tojson | safe }}'
+                                onclick="prepareExecutionModal(this)">
+                            <i class="bi bi-play-fill"></i> Ejecutar / Ver
+                        </button>
+                        <button class="btn btn-sm btn-primary"
+                                data-design-id="{{ design.id }}"
+                                data-design-name="{{ design.name }}"
+                                data-filters='{{ design.config.get("filters", []) | tojson | safe }}'
+                                data-to="{{ design.email_to or '' }}"
+                                data-cc="{{ design.email_cc or '' }}"
+                                onclick="prepareEmailModal(this)">
+                            <i class="bi bi-envelope-fill"></i> Enviar por Email
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center">No hay diseños de reportes disponibles.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="executionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="executionModalLabel">Parámetros del Reporte</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="executionForm" method="post" target="_blank"> 
+                 <div class="modal-body" id="executionModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Generar Reporte</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="emailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="emailModalLabel">Enviar Reporte por Email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="emailForm" method="post" action="{{ url_for('admin.send_report_email') }}">
+                <input type="hidden" name="design_id" id="emailDesignId">
+                <div class="modal-body">
+                    <div id="emailFiltersContainer" class="mb-3">
+                        </div>
+                    <div class="mb-3">
+                        <label for="emailTo" class="form-label">Enviar a (separados por coma)</label>
+                        <input type="text" class="form-control" name="email_to" id="emailTo" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailCc" class="form-label">CC (separados por coma)</label>
+                        <input type="text" class="form-control" name="email_cc" id="emailCc">
+                    </div>
+                     <div class="mb-3">
+                        <label for="emailSubject" class="form-label">Asunto</label>
+                        <input type="text" class="form-control" name="subject" id="emailSubject" required>
+                    </div>
+                     <div class="mb-3">
+                        <label for="emailBody" class="form-label">Cuerpo del Mensaje (Opcional)</label>
+                        <textarea class="form-control" name="body" id="emailBody" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Enviar Email</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const executionModal = new bootstrap.Modal(document.getElementById('executionModal'));
+    const emailModal = new bootstrap.Modal(document.getElementById('emailModal'));
+
+    // Función para el modal de ejecución (sin cambios)
+    function prepareExecutionModal(buttonElement) {
+        const designId = buttonElement.dataset.designId;
+        const designName = buttonElement.dataset.designName;
+        const filters = JSON.parse(buttonElement.dataset.filters);
+        const modalLabel = document.getElementById('executionModalLabel');
+        const modalBody = document.getElementById('executionModalBody');
+        const form = document.getElementById('executionForm');
+
+        modalLabel.innerText = `Parámetros para: ${designName}`;
+        modalBody.innerHTML = '';
+        if (filters && filters.length > 0) {
+            filters.forEach(filter => {
+                const inputType = filter.type === 'date' ? 'date' : (filter.type === 'number' ? 'number' : 'text');
+                modalBody.innerHTML += `<div class="mb-3"><label for="filter_${filter.name}" class="form-label">${filter.label}</label><input type="${inputType}" class="form-control" name="${filter.name}" id="filter_${filter.name}" required></div>`;
+            });
+        } else {
+            modalBody.innerHTML = '<p>Este reporte no requiere parámetros. ¿Deseas generarlo ahora?</p>';
+        }
+        form.action = `{{ url_for('admin.execute_report', design_id=0) }}`.replace('0', designId);
+        executionModal.show();
+    }
+
+    // NUEVA Función para el modal de envío de email
+    function prepareEmailModal(buttonElement) {
+        const designId = buttonElement.dataset.designId;
+        const designName = buttonElement.dataset.designName;
+        const filters = JSON.parse(buttonElement.dataset.filters);
+        const defaultTo = buttonElement.dataset.to;
+        const defaultCc = buttonElement.dataset.cc;
+
+        const modalLabel = document.getElementById('emailModalLabel');
+        const filtersContainer = document.getElementById('emailFiltersContainer');
+        
+        modalLabel.innerText = `Enviar por Email: ${designName}`;
+        document.getElementById('emailDesignId').value = designId;
+        document.getElementById('emailTo').value = defaultTo;
+        document.getElementById('emailCc').value = defaultCc;
+        document.getElementById('emailSubject').value = `Reporte: ${designName}`;
+        document.getElementById('emailBody').value = ''; // Cuerpo vacío por defecto
+
+        filtersContainer.innerHTML = ''; // Limpiar filtros anteriores
+        if (filters && filters.length > 0) {
+            filtersContainer.innerHTML = '<h6>Parámetros del Reporte:</h6>';
+            filters.forEach(filter => {
+                const inputType = filter.type === 'date' ? 'date' : (filter.type === 'number' ? 'number' : 'text');
+                filtersContainer.innerHTML += `<div class="mb-3"><label for="email_filter_${filter.name}" class="form-label">${filter.label}</label><input type="${inputType}" class="form-control" name="${filter.name}" id="email_filter_${filter.name}" required></div>`;
+            });
+        }
+        emailModal.show();
+    }
+</script>
+{% endblock %}
